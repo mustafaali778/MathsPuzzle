@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Matrix - Premium Puzzle Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --primary-color: #2c2c54;
+            --accent-color: #474787;
+            --highlight-color: #706fd3;
+            --text-color: #ffffff;
+            --correct-color: #4caf50;
+            --incorrect-color: #f44336;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-color), #272746);
+            color: var(--text-color);
+            perspective: 1000px;
+        }
+
+        #game-container {
+            width: 90vw;
+            max-width: 450px;
+            height: 70vh;
+            max-height: 650px;
+            background-color: var(--primary-color);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 5px var(--accent-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* --- Screen Styles --- */
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.6s;
+        }
+
+        .screen.hidden {
+            transform: scale(0.8) rotateY(45deg);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* --- Start Screen --- */
+        #start-screen h1 {
+            font-size: 3rem;
+            color: var(--highlight-color);
+            text-shadow: 0 0 15px var(--highlight-color);
+            margin-bottom: 10px;
+        }
+        
+        #start-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            max-width: 300px;
+        }
+
+        /* --- Game Screen --- */
+        #game-screen {
+            justify-content: space-between;
+        }
+        
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        #score-value {
+            color: var(--highlight-color);
+        }
+
+        #timer {
+            width: 100%;
+            height: 10px;
+            background-color: var(--accent-color);
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--highlight-color), #a489f2);
+            border-radius: 5px;
+            transition: width 0.1s linear;
+        }
+
+        #puzzle-container {
+            width: 100%;
+            height: 120px;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 5px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        #puzzle-container span {
+            min-width: 50px;
+        }
+
+        .question-mark {
+            color: var(--highlight-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        #options-container {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* --- Game Over Screen --- */
+        #gameover-screen h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        #gameover-screen p {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+        }
+        
+        #final-score {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--highlight-color);
+            text-shadow: 0 0 10px var(--highlight-color);
+        }
+        
+        /* --- Button Styles --- */
+        .btn {
+            background-color: var(--highlight-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 10px;
+            padding: 15px 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateY(0);
+        }
+        
+        .btn:hover {
+            background-color: #837fdc;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .option-btn {
+            font-size: 2rem;
+            padding: 20px 10px;
+        }
+        
+        .feedback {
+            animation: pop 0.3s ease-out;
+        }
+        
+        .feedback.correct {
+            background-color: var(--correct-color);
+        }
+        
+        .feedback.incorrect {
+            background-color: var(--incorrect-color);
+        }
+
+        /* --- Animations --- */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .shake-animation {
+            animation: shake 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="start-screen" class="screen">
+            <h1>Math Matrix</h1>
+            <p>Solve the equation before the time runs out!</p>
+            <button id="start-button" class="btn">Start Game</button>
+        </div>
+
+        <div id="game-screen" class="screen hidden">
+            <div class="game-header">
+                <span>Score: <span id="score-value">0</span></span>
+            </div>
+            <div id="timer"><div id="timer-bar"></div></div>
+            <div id="puzzle-container">
+                </div>
+            <div id="options-container">
+                </div>
+        </div>
+
+        <div id="gameover-screen" class="screen hidden">
+            <h2>Game Over</h2>
+            <p>Your final score is:</p>
+            <span id="final-score">0</span>
+            <button id="play-again-button" class="btn" style="margin-top: 30px;">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const gameContainer = document.getElementById('game-container');
+            const screens = {
+                start: document.getElementById('start-screen'),
+                game: document.getElementById('game-screen'),
+                gameOver: document.getElementById('gameover-screen'),
+            };
+            const buttons = {
+                start: document.getElementById('start-button'),
+                playAgain: document.getElementById('play-again-button'),
+            };
+            const displays = {
+                score: document.getElementById('score-value'),
+                timerBar: document.getElementById('timer-bar'),
+                puzzle: document.getElementById('puzzle-container'),
+                options: document.getElementById('options-container'),
+                finalScore: document.getElementById('final-score'),
+            };
+
+            // --- Game State ---
+            let score = 0;
+            let timer;
+            let timeLeft;
+            let currentPuzzle = {};
+            const INITIAL_TIME = 10; // seconds
+
+            // --- Functions ---
+
+            function switchScreen(screenName) {
+                Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+                screens[screenName].classList.remove('hidden');
+            }
+
+            function startGame() {
+                score = 0;
+                displays.score.textContent = score;
+                switchScreen('game');
+                generatePuzzle();
+                startTimer();
+            }
+
+            function startTimer() {
+                timeLeft = INITIAL_TIME;
+                updateTimerDisplay();
+                timer = setInterval(() => {
+                    timeLeft -= 0.05;
+                    updateTimerDisplay();
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        endGame();
+                    }
+                }, 50);
+            }
+            
+            function updateTimerDisplay() {
+                const percentage = (timeLeft / INITIAL_TIME) * 100;
+                displays.timerBar.style.width = `${percentage}%`;
+            }
+
+            function generatePuzzle() {
+                const level = Math.floor(score / 5);
+                const maxNumber = 10 + level * 2;
+                const operators = ['+', '-', '*'];
+                
+                const num1 = Math.floor(Math.random() * maxNumber) + 1;
+                const num2 = Math.floor(Math.random() * maxNumber) + 1;
+                const operator = operators[Math.floor(Math.random() * operators.length)];
+
+                let result;
+                if (operator === '+') result = num1 + num2;
+                if (operator === '-') result = num1 - num2;
+                if (operator === '*') result = num1 * num2;
+
+                currentPuzzle = { num1, num2, operator, result };
+                displayPuzzle();
+            }
+
+            function displayPuzzle() {
+                const { num1, num2, operator, result } = currentPuzzle;
+                
+                displays.puzzle.innerHTML = `
+                    <span>${num1}</span> 
+                    <span>${operator}</span> 
+                    <span>${num2}</span> 
+                    <span>=</span> 
+                    <span class="question-mark">?</span>`;
+                
+                generateOptions();
+            }
+            
+            function generateOptions() {
+                const { result } = currentPuzzle;
+                const options = new Set([result]);
+
+                while (options.size < 4) {
+                    const offset = Math.ceil(Math.random() * 10) * (Math.random() < 0.5 ? -1 : 1);
+                    const wrongAnswer = result + offset;
+                    if (wrongAnswer !== result) {
+                        options.add(wrongAnswer);
+                    }
+                }
+                
+                const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+
+                displays.options.innerHTML = '';
+                shuffledOptions.forEach(option => {
+                    const button = document.createElement('button');
+                    button.className = 'btn option-btn';
+                    button.textContent = option;
+                    button.onclick = () => checkAnswer(option, button);
+                    displays.options.appendChild(button);
+                });
+            }
+
+            function checkAnswer(selectedAnswer, button) {
+                clearInterval(timer); // Pause timer while checking
+                
+                const isCorrect = selectedAnswer === currentPuzzle.result;
+                button.classList.add('feedback', isCorrect ? 'correct' : 'incorrect');
+                
+                if (isCorrect) {
+                    score++;
+                    displays.score.textContent = score;
+                    timeLeft = Math.min(INITIAL_TIME, timeLeft + 1.5); // Add time bonus
+                    setTimeout(() => {
+                        generatePuzzle();
+                        startTimer();
+                    }, 500);
+                } else {
+                    gameContainer.classList.add('shake-animation');
+                    setTimeout(() => {
+                        gameContainer.classList.remove('shake-animation');
+                        endGame();
+                    }, 500);
+                }
+            }
+            
+            function endGame() {
+                displays.finalScore.textContent = score;
+                switchScreen('gameOver');
+            }
+
+            // --- Event Listeners ---
+            buttons.start.addEventListener('click', startGame);
+            buttons.playAgain.addEventListener('click', startGame);
+
+            // --- Initial Call ---
+            switchScreen('start');
+        });
+    </script>
+</body>
+</html>
