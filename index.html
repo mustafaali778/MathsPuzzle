@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --bg-color: #1a1a2e;
@@ -157,7 +158,7 @@
 
         #gameover-screen p {
             font-size: 1.3rem;
-            margin-bottom: 30px;
+            margin-bottom: 15px; /* Adjusted margin */
         }
         
         #final-score {
@@ -167,6 +168,17 @@
             text-shadow: 0 0 10px var(--highlight-color);
         }
         
+        #high-score-display {
+            font-size: 1rem;
+            margin-bottom: 25px;
+            color: #ccc;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+        }
+        
         /* --- Button Styles --- */
         .btn {
             background-color: var(--highlight-color);
@@ -174,7 +186,7 @@
             border: none;
             border-radius: 10px;
             padding: 15px 20px;
-            font-size: 1.5rem;
+            font-size: 1.2rem; /* Adjusted for two buttons */
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -191,6 +203,13 @@
         .btn:active {
             transform: translateY(1px);
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* NEW: Style for loading state */
+        .btn:disabled {
+            background-color: var(--accent-color);
+            cursor: wait;
+            transform: translateY(0);
         }
 
         .option-btn {
@@ -223,7 +242,7 @@
         }
         
         @keyframes pop {
-            0% { transform: scale(1); }
+            0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
@@ -236,13 +255,13 @@
 <body>
 
     <div id="game-container">
-        <div id="start-screen" class="screen">
+        <div id="start-screen" class="screen" data-html2canvas-ignore="true">
             <h1>Math Matrix</h1>
             <p>Solve the equation before the time runs out!</p>
             <button id="start-button" class="btn">Start Game</button>
         </div>
 
-        <div id="game-screen" class="screen hidden">
+        <div id="game-screen" class="screen hidden" data-html2canvas-ignore="true">
             <div class="game-header">
                 <span>Score: <span id="score-value">0</span></span>
             </div>
@@ -257,7 +276,11 @@
             <h2>Game Over</h2>
             <p>Your final score is:</p>
             <span id="final-score">0</span>
-            <button id="play-again-button" class="btn" style="margin-top: 30px;">Play Again</button>
+            <p id="high-score-display">High Score: 0</p>
+            <div class="button-group" data-html2canvas-ignore="true">
+                <button id="play-again-button" class="btn">Play Again</button>
+                <button id="share-button" class="btn">Share Score</button>
+            </div>
         </div>
     </div>
 
@@ -273,6 +296,7 @@
             const buttons = {
                 start: document.getElementById('start-button'),
                 playAgain: document.getElementById('play-again-button'),
+                share: document.getElementById('share-button'),
             };
             const displays = {
                 score: document.getElementById('score-value'),
@@ -280,6 +304,7 @@
                 puzzle: document.getElementById('puzzle-container'),
                 options: document.getElementById('options-container'),
                 finalScore: document.getElementById('final-score'),
+                highScore: document.getElementById('high-score-display'),
             };
 
             // --- Game State ---
@@ -401,13 +426,71 @@
             }
             
             function endGame() {
+                updateHighScore();
                 displays.finalScore.textContent = score;
                 switchScreen('gameOver');
             }
+            
+            // --- High Score and Sharing ---
+            
+            function updateHighScore() {
+                const highScore = localStorage.getItem('mathMatrixHighScore') || 0;
+                if (score > highScore) {
+                    localStorage.setItem('mathMatrixHighScore', score);
+                    displays.highScore.textContent = `New High Score: ${score}`;
+                } else {
+                    displays.highScore.textContent = `High Score: ${highScore}`;
+                }
+            }
+            
+            // --- UPDATED shareScore function ---
+            async function shareScore() {
+                const shareButton = buttons.share;
+                shareButton.disabled = true;
+                shareButton.textContent = "Preparing...";
 
+                try {
+                    const canvas = await html2canvas(screens.gameOver, {
+                        backgroundColor: null, // Transparent background
+                        logging: false, // Hide console logs
+                        onclone: (document) => {
+                            // This runs on the cloned document before screenshot
+                            // We remove the buttons from the screenshot
+                            const clonedButtons = document.querySelector('.button-group');
+                            if(clonedButtons) clonedButtons.style.display = 'none';
+                        }
+                    });
+
+                    canvas.toBlob(async (blob) => {
+                        const file = new File([blob], "math-matrix-score.png", { type: "image/png" });
+                        const shareData = {
+                            title: 'Math Matrix Challenge!',
+                            text: `I scored ${score} in Math Matrix! Can you beat my score?`,
+                            files: [file],
+                        };
+
+                        if (navigator.canShare && navigator.canShare(shareData)) {
+                            await navigator.share(shareData);
+                            console.log('Score screenshot shared successfully!');
+                        } else {
+                            alert("Sharing files is not supported on this browser. Try on a mobile device!");
+                        }
+                    }, 'image/png');
+
+                } catch (err) {
+                    console.error('Error taking screenshot or sharing:', err);
+                    alert('Oops, something went wrong while creating the screenshot.');
+                } finally {
+                    // Re-enable the button after sharing is done or failed
+                    shareButton.disabled = false;
+                    shareButton.textContent = "Share Score";
+                }
+            }
+            
             // --- Event Listeners ---
             buttons.start.addEventListener('click', startGame);
             buttons.playAgain.addEventListener('click', startGame);
+            buttons.share.addEventListener('click', shareScore);
 
             // --- Initial Call ---
             switchScreen('start');
