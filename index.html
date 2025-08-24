@@ -266,10 +266,8 @@
                 <span>Score: <span id="score-value">0</span></span>
             </div>
             <div id="timer"><div id="timer-bar"></div></div>
-            <div id="puzzle-container">
-                </div>
-            <div id="options-container">
-                </div>
+            <div id="puzzle-container"></div>
+            <div id="options-container"></div>
         </div>
 
         <div id="gameover-screen" class="screen hidden">
@@ -281,6 +279,18 @@
                 <button id="play-again-button" class="btn">Play Again</button>
                 <button id="share-button" class="btn">Share Score</button>
             </div>
+
+            <!-- Ad Script Added Here -->
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '507c290c90cc6bd1e56eb38ad84093a4',
+                    'format' : 'iframe',
+                    'height' : 60,
+                    'width' : 468,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/507c290c90cc6bd1e56eb38ad84093a4/invoke.js"></script>
         </div>
     </div>
 
@@ -366,7 +376,7 @@
             }
 
             function displayPuzzle() {
-                const { num1, num2, operator, result } = currentPuzzle;
+                const { num1, num2, operator } = currentPuzzle;
                 
                 displays.puzzle.innerHTML = `
                     <span>${num1}</span> 
